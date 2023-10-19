@@ -181,16 +181,16 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         // Validate buffer keys.
         val bundledData = Arguments.toBundle(data)
         val minBuffer =
-            bundledData?.getDouble(MusicService.MIN_BUFFER_KEY)?.toMilliseconds()?.toInt()
+            bundledData?.getDouble(MusicService.MIN_BUFFER)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_MIN_BUFFER_MS
         val maxBuffer =
-            bundledData?.getDouble(MusicService.MAX_BUFFER_KEY)?.toMilliseconds()?.toInt()
+            bundledData?.getDouble(MusicService.MAX_BUFFER)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_MAX_BUFFER_MS
         val playBuffer =
-            bundledData?.getDouble(MusicService.PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt()
+            bundledData?.getDouble(MusicService.PLAY_BUFFER)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_BUFFER_FOR_PLAYBACK_MS
         val backBuffer =
-            bundledData?.getDouble(MusicService.BACK_BUFFER_KEY)?.toMilliseconds()?.toInt()
+            bundledData?.getDouble(MusicService.BACK_BUFFER)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_BACK_BUFFER_DURATION_MS
 
         if (playBuffer < 0) {
