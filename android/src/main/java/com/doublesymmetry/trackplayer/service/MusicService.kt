@@ -26,7 +26,7 @@ import com.doublesymmetry.trackplayer.model.PlaybackMetadata
 import com.doublesymmetry.trackplayer.model.Track
 import com.doublesymmetry.trackplayer.model.TrackAudioItem
 import com.doublesymmetry.trackplayer.module.MusicEvents
-import com.doublesymmetry.trackplayer.module.MusicEvents.Companion.METADATA_PAYLOAD_KEY
+import com.doublesymmetry.trackplayer.module.MusicEvents.Companion.METADATA_PAYLOAD
 import com.doublesymmetry.trackplayer.utils.BundleUtils
 import com.doublesymmetry.trackplayer.utils.BundleUtils.setRating
 import com.facebook.react.HeadlessJsTaskService
@@ -134,13 +134,13 @@ class MusicService : HeadlessJsTaskService() {
         }
 
         val bufferConfig = BufferConfig(
-            playerOptions?.getDouble(MIN_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-            playerOptions?.getDouble(MAX_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-            playerOptions?.getDouble(PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-            playerOptions?.getDouble(BACK_BUFFER_KEY)?.toMilliseconds()?.toInt(),
+            playerOptions?.getDouble(MIN_BUFFER)?.toMilliseconds()?.toInt(),
+            playerOptions?.getDouble(MAX_BUFFER)?.toMilliseconds()?.toInt(),
+            playerOptions?.getDouble(PLAY_BUFFER)?.toMilliseconds()?.toInt(),
+            playerOptions?.getDouble(BACK_BUFFER)?.toMilliseconds()?.toInt(),
         )
 
-        val cacheConfig = CacheConfig(playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong())
+        val cacheConfig = CacheConfig(playerOptions?.getDouble(MAX_CACHE_SIZE)?.toLong())
         val playerConfig = PlayerConfig(
             interceptPlayerActionsTriggeredExternally = true,
             handleAudioBecomingNoisy = true,
@@ -166,13 +166,13 @@ class MusicService : HeadlessJsTaskService() {
     @MainThread
     fun updateOptions(options: Bundle) {
         latestOptions = options
-        val androidOptions = options.getBundle(ANDROID_OPTIONS_KEY)
+        val androidOptions = options.getBundle(ANDROID_OPTIONS)
 
-        appKilledPlaybackBehavior = AppKilledPlaybackBehavior::string.find(androidOptions?.getString(APP_KILLED_PLAYBACK_BEHAVIOR_KEY)) ?: AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
+        appKilledPlaybackBehavior = AppKilledPlaybackBehavior::string.find(androidOptions?.getString(APP_KILLED_PLAYBACK_BEHAVIOR)) ?: AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
 
         //TODO: This handles a deprecated flag. Should be removed soon.
-        options.getBoolean(STOPPING_APP_PAUSES_PLAYBACK_KEY).let {
-            stoppingAppPausesPlayback = options.getBoolean(STOPPING_APP_PAUSES_PLAYBACK_KEY)
+        options.getBoolean(STOPPING_APP_PAUSES_PLAYBACK).let {
+            stoppingAppPausesPlayback = options.getBoolean(STOPPING_APP_PAUSES_PLAYBACK)
             if (stoppingAppPausesPlayback) {
                 appKilledPlaybackBehavior = AppKilledPlaybackBehavior.PAUSE_PLAYBACK
             }
@@ -180,7 +180,7 @@ class MusicService : HeadlessJsTaskService() {
 
         ratingType = BundleUtils.getInt(options, "ratingType", RatingCompat.RATING_NONE)
 
-        player.playerOptions.alwaysPauseOnInterruption = androidOptions?.getBoolean(PAUSE_ON_INTERRUPTION_KEY) ?: false
+        player.playerOptions.alwaysPauseOnInterruption = androidOptions?.getBoolean(PAUSE_ON_INTERRUPTION) ?: false
 
         capabilities = options.getIntegerArrayList("capabilities")?.map { Capability.values()[it] } ?: emptyList()
         notificationCapabilities = options.getIntegerArrayList("notificationCapabilities")?.map { Capability.values()[it] } ?: emptyList()
@@ -238,7 +238,7 @@ class MusicService : HeadlessJsTaskService() {
 
         // setup progress update events if configured
         progressUpdateJob?.cancel()
-        val updateInterval = BundleUtils.getIntOrNull(options, PROGRESS_UPDATE_EVENT_INTERVAL_KEY)
+        val updateInterval = BundleUtils.getIntOrNull(options, PROGRESS_UPDATE_EVENT_INTERVAL)
         if (updateInterval != null && updateInterval > 0) {
             progressUpdateJob = scope.launch {
                 progressUpdateEventFlow(updateInterval.toLong()).collect { emit(MusicEvents.PLAYBACK_PROGRESS_UPDATED, it) }
@@ -262,10 +262,10 @@ class MusicService : HeadlessJsTaskService() {
     private suspend fun progressUpdateEvent(): Bundle {
         return withContext(Dispatchers.Main) {
             Bundle().apply {
-                putDouble(POSITION_KEY, player.position.toSeconds())
-                putDouble(DURATION_KEY, player.duration.toSeconds())
-                putDouble(BUFFERED_POSITION_KEY, player.bufferedPosition.toSeconds())
-                putInt(TRACK_KEY, player.currentIndex)
+                putDouble(POSITION, player.position.toSeconds())
+                putDouble(DURATION, player.duration.toSeconds())
+                putDouble(BUFFERED_POSITION, player.bufferedPosition.toSeconds())
+                putInt(TRACK, player.currentIndex)
             }
         }
     }
@@ -418,9 +418,9 @@ class MusicService : HeadlessJsTaskService() {
     @MainThread
     fun getPlayerStateBundle(state: AudioPlayerState): Bundle {
         val bundle = Bundle()
-        bundle.putString(STATE_KEY, state.asLibState.state)
+        bundle.putString(STATE, state.asLibState.state)
         if (state == AudioPlayerState.ERROR) {
-            bundle.putBundle(ERROR_KEY, getPlaybackErrorBundle())
+            bundle.putBundle(ERROR, getPlaybackErrorBundle())
         }
         return bundle
     }
@@ -446,13 +446,13 @@ class MusicService : HeadlessJsTaskService() {
         oldPosition: Double
     ) {
         val a = Bundle()
-        a.putDouble(POSITION_KEY, oldPosition)
+        a.putDouble(POSITION, oldPosition)
         if (index != null) {
-            a.putInt(NEXT_TRACK_KEY, index)
+            a.putInt(NEXT_TRACK, index)
         }
 
         if (previousIndex != null) {
-            a.putInt(TRACK_KEY, previousIndex)
+            a.putInt(TRACK, previousIndex)
         }
 
         emit(MusicEvents.PLAYBACK_TRACK_CHANGED, a)
@@ -472,8 +472,8 @@ class MusicService : HeadlessJsTaskService() {
 
     private fun emitQueueEndedEvent() {
         val bundle = Bundle()
-        bundle.putInt(TRACK_KEY, player.currentIndex)
-        bundle.putDouble(POSITION_KEY, player.position.toSeconds())
+        bundle.putInt(TRACK, player.currentIndex)
+        bundle.putDouble(POSITION, player.position.toSeconds())
         emit(MusicEvents.PLAYBACK_QUEUE_ENDED, bundle)
     }
 
@@ -615,8 +615,8 @@ class MusicService : HeadlessJsTaskService() {
         scope.launch {
             event.onAudioFocusChanged.collect {
                 Bundle().apply {
-                    putBoolean(IS_FOCUS_LOSS_PERMANENT_KEY, it.isFocusLostPermanently)
-                    putBoolean(IS_PAUSED_KEY, it.isPaused)
+                    putBoolean(IS_FOCUS_LOSS_PERMANENT, it.isFocusLostPermanently)
+                    putBoolean(IS_PAUSED, it.isPaused)
                     emit(MusicEvents.BUTTON_DUCK, this)
                 }
             }
@@ -644,14 +644,14 @@ class MusicService : HeadlessJsTaskService() {
                     MediaSessionCallback.STOP -> emit(MusicEvents.BUTTON_STOP)
                     MediaSessionCallback.FORWARD -> {
                         Bundle().apply {
-                            val interval = latestOptions?.getDouble(FORWARD_JUMP_INTERVAL_KEY, DEFAULT_JUMP_INTERVAL) ?: DEFAULT_JUMP_INTERVAL
+                            val interval = latestOptions?.getDouble(FORWARD_JUMP_INTERVAL, DEFAULT_JUMP_INTERVAL) ?: DEFAULT_JUMP_INTERVAL
                             putInt("interval", interval.toInt())
                             emit(MusicEvents.BUTTON_JUMP_FORWARD, this)
                         }
                     }
                     MediaSessionCallback.REWIND -> {
                         Bundle().apply {
-                            val interval = latestOptions?.getDouble(BACKWARD_JUMP_INTERVAL_KEY, DEFAULT_JUMP_INTERVAL) ?: DEFAULT_JUMP_INTERVAL
+                            val interval = latestOptions?.getDouble(BACKWARD_JUMP_INTERVAL, DEFAULT_JUMP_INTERVAL) ?: DEFAULT_JUMP_INTERVAL
                             putInt("interval", interval.toInt())
                             emit(MusicEvents.BUTTON_JUMP_BACKWARD, this)
                         }
@@ -664,7 +664,7 @@ class MusicService : HeadlessJsTaskService() {
             event.onTimedMetadata.collect {
                 val data = MetadataAdapter.fromMetadata(it)
                 val bundle = Bundle().apply {
-                    putParcelableArrayList(METADATA_PAYLOAD_KEY, ArrayList(data))
+                    putParcelableArrayList(METADATA_PAYLOAD, ArrayList(data))
                 }
                 emit(MusicEvents.METADATA_TIMED_RECEIVED, bundle)
 
@@ -693,7 +693,7 @@ class MusicService : HeadlessJsTaskService() {
             event.onCommonMetadata.collect {
                 val data = MetadataAdapter.fromMediaMetadata(it)
                 val bundle = Bundle().apply {
-                    putBundle(METADATA_PAYLOAD_KEY, data)
+                    putBundle(METADATA_PAYLOAD, data)
                 }
                 emit(MusicEvents.METADATA_COMMON_RECEIVED, bundle)
             }
@@ -745,7 +745,7 @@ class MusicService : HeadlessJsTaskService() {
     }
 
     override fun getTaskConfig(intent: Intent?): HeadlessJsTaskConfig {
-        return HeadlessJsTaskConfig(TASK_KEY, Arguments.createMap(), 0, true)
+        return HeadlessJsTaskConfig(TASK, Arguments.createMap(), 0, true)
     }
 
     @MainThread
@@ -801,39 +801,39 @@ class MusicService : HeadlessJsTaskService() {
 
     companion object {
         const val EMPTY_NOTIFICATION_ID = 1
-        const val STATE_KEY = "state"
-        const val ERROR_KEY  = "error"
-        const val EVENT_KEY = "event"
-        const val DATA_KEY = "data"
-        const val TRACK_KEY = "track"
-        const val NEXT_TRACK_KEY = "nextTrack"
-        const val POSITION_KEY = "position"
-        const val DURATION_KEY = "duration"
-        const val BUFFERED_POSITION_KEY = "buffered"
+        const val STATE = "state"
+        const val ERROR  = "error"
+        const val EVENT = "event"
+        const val DATA = "data"
+        const val TRACK = "track"
+        const val NEXT_TRACK = "nextTrack"
+        const val POSITION = "position"
+        const val DURATION = "duration"
+        const val BUFFERED_POSITION = "buffered"
 
-        const val TASK_KEY = "TrackPlayer"
+        const val TASK = "TrackPlayer"
 
-        const val MIN_BUFFER_KEY = "minBuffer"
-        const val MAX_BUFFER_KEY = "maxBuffer"
-        const val PLAY_BUFFER_KEY = "playBuffer"
-        const val BACK_BUFFER_KEY = "backBuffer"
+        const val MIN_BUFFER = "minBuffer"
+        const val MAX_BUFFER = "maxBuffer"
+        const val PLAY_BUFFER = "playBuffer"
+        const val BACK_BUFFER = "backBuffer"
 
-        const val FORWARD_JUMP_INTERVAL_KEY = "forwardJumpInterval"
-        const val BACKWARD_JUMP_INTERVAL_KEY = "backwardJumpInterval"
-        const val PROGRESS_UPDATE_EVENT_INTERVAL_KEY = "progressUpdateEventInterval"
+        const val FORWARD_JUMP_INTERVAL = "forwardJumpInterval"
+        const val BACKWARD_JUMP_INTERVAL = "backwardJumpInterval"
+        const val PROGRESS_UPDATE_EVENT_INTERVAL = "progressUpdateEventInterval"
 
-        const val MAX_CACHE_SIZE_KEY = "maxCacheSize"
+        const val MAX_CACHE_SIZE = "maxCacheSize"
 
-        const val ANDROID_OPTIONS_KEY = "android"
+        const val ANDROID_OPTIONS = "android"
 
-        const val STOPPING_APP_PAUSES_PLAYBACK_KEY = "stoppingAppPausesPlayback"
-        const val APP_KILLED_PLAYBACK_BEHAVIOR_KEY = "appKilledPlaybackBehavior"
-        const val PAUSE_ON_INTERRUPTION_KEY = "alwaysPauseOnInterruption"
+        const val STOPPING_APP_PAUSES_PLAYBACK = "stoppingAppPausesPlayback"
+        const val APP_KILLED_PLAYBACK_BEHAVIOR = "appKilledPlaybackBehavior"
+        const val PAUSE_ON_INTERRUPTION = "alwaysPauseOnInterruption"
         const val AUTO_UPDATE_METADATA = "autoUpdateMetadata"
         const val AUTO_HANDLE_INTERRUPTIONS = "autoHandleInterruptions"
         const val ANDROID_AUDIO_CONTENT_TYPE = "androidAudioContentType"
-        const val IS_FOCUS_LOSS_PERMANENT_KEY = "permanent"
-        const val IS_PAUSED_KEY = "paused"
+        const val IS_FOCUS_LOSS_PERMANENT = "permanent"
+        const val IS_PAUSED = "paused"
 
         const val DEFAULT_JUMP_INTERVAL = 15.0
     }
